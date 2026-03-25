@@ -6,3 +6,6 @@ pyclipper
 pyyaml
 rapidfuzz
 tqdm
+dataset
+evaluate
+levenshtein
