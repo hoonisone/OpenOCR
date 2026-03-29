@@ -20,7 +20,7 @@ module_mapping = {
     'MPGLabelDecode': '.mgp_postprocess',
     'UniRecLabelDecode': '.unirec_postprocess',
     'CMERLabelDecode': '.cmer_postprocess',
-    'GTCLabelDecode': '.'  # 当前模块中的类
+    'GTCLabelDecode': '.gtc_postprocess' 
 }
 
 
@@ -45,44 +45,3 @@ def build_post_process(config, global_config=None):
 
     return module_class(**config)
 
-
-class GTCLabelDecode(object):
-    """Convert between text-label and text-index."""
-
-    def __init__(self,
-                 gtc_label_decode=None,
-                 character_dict_path=None,
-                 use_space_char=True,
-                 only_gtc=False,
-                 with_ratio=False,
-                 **kwargs):
-        gtc_label_decode['character_dict_path'] = character_dict_path
-        gtc_label_decode['use_space_char'] = use_space_char
-        self.gtc_label_decode = build_post_process(gtc_label_decode)
-        self.ctc_label_decode = build_post_process({
-            'name':
-            'CTCLabelDecode',
-            'character_dict_path':
-            character_dict_path,
-            'use_space_char':
-            use_space_char
-        })
-        self.gtc_character = self.gtc_label_decode.character
-        self.ctc_character = self.ctc_label_decode.character
-        self.only_gtc = only_gtc
-        self.with_ratio = with_ratio
-
-    def get_character_num(self):
-        return [len(self.gtc_character), len(self.ctc_character)]
-
-    def __call__(self, preds, batch=None, *args, **kwargs):
-        if self.with_ratio:
-            batch = batch[:-1]
-        gtc = self.gtc_label_decode(preds['gtc_pred'],
-                                    batch[:-2] if batch is not None else None)
-        if self.only_gtc:
-            return gtc
-        ctc = self.ctc_label_decode(preds['ctc_pred'], [None] +
-                                    batch[-2:] if batch is not None else None)
-
-        return [gtc, ctc]

@@ -92,7 +92,7 @@ class BaseRecLabelEncode(object):
                     continue
                 else:
                     self.ignored_sample_num += 1
-                    if self.ignored_sample_num % 100 == 0:
+                    if self.ignored_sample_num % 1000 == 0:
                         self.logger.warning(f'The character {char} is not in the dictionary, the sample will be discarded.')
                         self.logger.warning(f'Ignored {self.ignored_sample_num} samples. until now.')
                     return None

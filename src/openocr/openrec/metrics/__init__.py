@@ -6,12 +6,22 @@ support_dict = [
     'RecMetric', 'RecMetricLong', 'RecGTCMetric', 'RecMPGMetric', 'CMERMetric'
 ]
 
+MODULES = {
+    'RecMetric': '.rec_metric',
+    'RecGTCMetric': '.rec_metric_gtc',
+    'RecMetricLong': '.rec_metric_long',
+    'RecMPGMetric': '.rec_metric_mgp',
+    'CMERMetric': '.rec_metric_cmer',
+
+}
+
+from importlib import import_module
 
 def build_metric(config):
     config = copy.deepcopy(config)
     module_name = config.pop('name')
-    assert module_name in support_dict, Exception(
-        'metric only support {}'.format(support_dict))
+    # assert module_name in support_dict, Exception(
+    #     'metric only support {}'.format(support_dict))
 
     # Lazy import
     if module_name == 'RecMetric':
@@ -29,5 +39,9 @@ def build_metric(config):
     elif module_name == 'CMERMetric':
         from .rec_metric_cmer import CMERMetric
         module_class = CMERMetric(**config)
-
+    else:
+        module_str = MODULES[module_name]
+        module = import_module(module_str, package=__package__)
+        module_class = getattr(module, module_name)
+        return module_class(**config)
     return module_class
