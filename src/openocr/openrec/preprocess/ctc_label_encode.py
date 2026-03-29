@@ -14,15 +14,17 @@ class BaseRecLabelEncode(object):
         character_dict_path=None,
         use_space_char=False,
         lower=False,
+        allow_unknown_chars=False, # if True, unknown characters will be ignored, and the sample will be ised. if False, the sample that contains unknown characters will be discarded.
     ):
         self.max_text_len = max_text_length
         self.beg_str = 'sos'
         self.end_str = 'eos'
         self.lower = lower
         self.reverse = False
+        self.logger = get_logger()
+        self.ignored_sample_num = 0
         if character_dict_path is None:
-            logger = get_logger()
-            logger.warning(
+            self.logger.warning(
                 'The character_dict_path is None, model can only recognize number and lower letters'
             )
             self.character_str = '0123456789abcdefghijklmnopqrstuvwxyz'
@@ -45,6 +47,7 @@ class BaseRecLabelEncode(object):
         for i, char in enumerate(dict_character):
             self.dict[char] = i
         self.character = dict_character
+        self.allow_unknown_chars = allow_unknown_chars
 
     def label_reverse(self, text):
         text_re = []
@@ -76,13 +79,23 @@ class BaseRecLabelEncode(object):
             length: length of each text. [batch_size]
         """
         if len(text) == 0:
+            self.logger.warning(
+                'The text is empty, the sample will be discarded.'
+            )
             return None
         if self.lower:
             text = text.lower()
         text_list = []
         for char in text:
             if char not in self.dict:
-                continue
+                if self.allow_unknown_chars:
+                    continue
+                else:
+                    self.ignored_sample_num += 1
+                    if self.ignored_sample_num % 100 == 0:
+                        self.logger.warning(f'The character {char} is not in the dictionary, the sample will be discarded.')
+                        self.logger.warning(f'Ignored {self.ignored_sample_num} samples. until now.')
+                    return None
             text_list.append(self.dict[char])
         if len(text_list) == 0 or len(text_list) > self.max_text_len:
             return None
