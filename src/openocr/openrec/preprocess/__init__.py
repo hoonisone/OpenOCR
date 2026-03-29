@@ -85,7 +85,6 @@ def transform(data, ops=None):
             return None
     return data
 
-
 # 类名到模块的映射
 MODULE_MAPPING = {
     'ABINetLabelEncode': '.abinet_label_encode',
@@ -122,6 +121,7 @@ MODULE_MAPPING = {
     'VisionLANResize': '.resize',
     'RecDynamicResize': '.resize',
     'NaSizeResize': '.resize',
+    'GTCLabelEncode': '.gtc_label_encoder',
 }
 
 
@@ -150,30 +150,3 @@ def create_operators(op_param_list, global_config=None):
 
         ops.append(op_class(**param))
     return ops
-
-
-class GTCLabelEncode():
-    """Convert between text-label and text-index."""
-
-    def __init__(self,
-                 gtc_label_encode,
-                 max_text_length,
-                 character_dict_path=None,
-                 use_space_char=False,
-                 **kwargs):
-        self.gtc_label_encode = dynamic_import(gtc_label_encode['name'])(
-            max_text_length=max_text_length,
-            character_dict_path=character_dict_path,
-            use_space_char=use_space_char,
-            **gtc_label_encode)
-        self.ctc_label_encode = dynamic_import('CTCLabelEncode')(
-            max_text_length, character_dict_path, use_space_char)
-
-    def __call__(self, data):
-        data_ctc = self.ctc_label_encode({'label': data['label']})
-        data = self.gtc_label_encode(data)
-        if data_ctc is None or data is None:
-            return None
-        data['ctc_label'] = data_ctc['label']
-        data['ctc_length'] = data_ctc['length']
-        return data
