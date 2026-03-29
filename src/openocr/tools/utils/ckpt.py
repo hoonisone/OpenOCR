@@ -2,7 +2,7 @@ import os
 
 import torch
 
-from tools.utils.logging import get_logger
+from openocr.tools.utils.logging import get_logger
 
 def save_ckpt(
     model,

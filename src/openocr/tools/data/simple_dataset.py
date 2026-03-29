@@ -43,9 +43,9 @@ class SimpleDataSet(Dataset):
 
         self.set_epoch_as_seed(self.seed, dataset_config)
         if task == 'rec':
-            from openrec.preprocess import create_operators
+            from openocr.openrec.preprocess import create_operators
         elif task == 'det':
-            from opendet.preprocess import create_operators
+            from openocr.opendet.preprocess import create_operators
         self.ops = create_operators(dataset_config['transforms'],
                                     global_config)
         self.ext_op_transform_idx = dataset_config.get('ext_op_transform_idx',

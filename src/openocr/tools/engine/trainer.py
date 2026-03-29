@@ -128,7 +128,7 @@ class Trainer(object):
             self.logger.info('convert_sync_batchnorm')
         self.accumulation_steps = self.cfg['Global'].get(
             'accumulation_steps', 1)
-        from openrec.optimizer import build_optimizer
+        from openocr.openrec.optimizer import build_optimizer
         self.optimizer, self.lr_scheduler = None, None
         epochs = self.cfg['Global']['epoch_num']
         try:
@@ -162,10 +162,10 @@ class Trainer(object):
             f'run with torch {torch.__version__} and device {self.device}')
 
     def _init_rec_model(self):
-        from openrec.losses import build_loss as build_rec_loss
-        from openrec.metrics import build_metric as build_rec_metric
-        from openrec.modeling import build_model as build_rec_model
-        from openrec.postprocess import build_post_process as build_rec_post_process
+        from openocr.openrec.losses import build_loss as build_rec_loss
+        from openocr.openrec.metrics import build_metric as build_rec_metric
+        from openocr.openrec.modeling import build_model as build_rec_model
+        from openocr.openrec.postprocess import build_post_process as build_rec_post_process
 
         # build post process
         self.post_process_class = build_rec_post_process(
@@ -185,7 +185,7 @@ class Trainer(object):
                 # cfg_vlm._attn_implementation = "sdpa"
                 self.model = UniRecForConditionalGenerationNew(config=cfg_vlm)
             elif self.cfg['Architecture']['algorithm'] == 'CMER':
-                from openrec.modeling.cmer_modeling.modeling_cmer import CMER, CMERConfig
+                from openocr.openrec.modeling.cmer_modeling.modeling_cmer import CMER, CMERConfig
                 cfg_model = CMERConfig(
                     self.cfg['Architecture']['vision_config'],
                     self.cfg['Architecture']['decoder_config'])
@@ -200,10 +200,10 @@ class Trainer(object):
         self.eval_class = build_rec_metric(self.cfg['Metric'])
 
     def _init_det_model(self):
-        from opendet.losses import build_loss as build_det_loss
-        from opendet.metrics import build_metric as build_det_metric
-        from opendet.modeling import build_model as build_det_model
-        from opendet.postprocess import build_post_process as build_det_post_process
+        from openocr.opendet.losses import build_loss as build_det_loss
+        from openocr.opendet.metrics import build_metric as build_det_metric
+        from openocr.opendet.modeling import build_model as build_det_model
+        from openocr.opendet.postprocess import build_post_process as build_det_post_process
 
         # build post process
         self.post_process_class = build_det_post_process(
