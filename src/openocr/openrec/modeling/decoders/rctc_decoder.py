@@ -14,6 +14,7 @@ class RCTCDecoder(nn.Module):
                  return_feats=False,
                  **kwargs):
         super(RCTCDecoder, self).__init__()
+
         self.char_token = nn.Parameter(
             torch.zeros([1, 1, in_channels], dtype=torch.float32),
             requires_grad=True,
@@ -35,8 +36,13 @@ class RCTCDecoder(nn.Module):
                                    qkv_bias=False)
         self.out_channels = out_channels
         self.return_feats = return_feats
+        self.in_channels = in_channels
+        
+    @property
+    def feature_channels(self)->int:
+        return self.in_channels
 
-    def forward(self, x, data=None):
+    def forward(self, x, data=None, return_feats:bool=False):
 
         B, C, H, W = x.shape
         x = self.w_atten_block(x.permute(0, 2, 3,
@@ -58,13 +64,13 @@ class RCTCDecoder(nn.Module):
 
         predicts = self.fc(feats)
 
-        if self.return_feats:
-            result = (feats, predicts)
-        else:
-            result = predicts
-
         if not self.training:
             predicts = F.softmax(predicts, dim=2)
+            result = predicts
+
+        if self.return_feats|return_feats:
+            result = (feats, predicts)
+        else:
             result = predicts
 
         return result

@@ -1,6 +1,7 @@
 import io
 import copy
 import importlib
+from warnings import catch_warnings
 
 import cv2
 import numpy as np
@@ -80,9 +81,12 @@ def transform(data, ops=None):
     if ops is None:
         ops = []
     for op in ops:
-        data = op(data)
-        if data is None:
-            return None
+        try:
+            data = op(data)
+        except Exception as e:
+            print(f"Error applying operator {op.__class__.__name__}: {e}")
+            if data is None:
+                return None
     return data
 
 # 类名到模块的映射
@@ -141,6 +145,7 @@ def create_operators(op_param_list, global_config=None):
         param = copy.deepcopy(op_info[op_name]) or {}
 
         if global_config:
+            param.update(global_config)
             param.update(global_config)
 
         if op_name in globals():

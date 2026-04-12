@@ -23,6 +23,7 @@ class SMTRLabelDecode(BaseRecLabelDecode):
         self.next_mode = next_mode
 
     def __call__(self, preds, batch=None, *args, **kwargs):
+
         if isinstance(preds, list):
             preds = preds[-1]
         if isinstance(preds, torch.Tensor):
@@ -32,7 +33,12 @@ class SMTRLabelDecode(BaseRecLabelDecode):
         text = self.decode(preds_idx, preds_prob, is_remove_duplicate=False)
         if batch is None:
             return text
-        label = batch[1]
+        
+        
+        if isinstance(batch, dict):
+            label = batch["label"]
+        else:
+            label = batch[1]
         label = self.decode(label[:, 1:])
         return text, label
 

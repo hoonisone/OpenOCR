@@ -154,6 +154,7 @@ class CTCDecoder(nn.Module):
                  svtr_encoder=None,
                  **kwargs):
         super(CTCDecoder, self).__init__()
+        self.out_channels = out_channels
         if svtr_encoder is not None:
             svtr_encoder['in_channels'] = in_channels
             self.svtr_encoder = EncoderWithSVTR(**svtr_encoder)
@@ -178,6 +179,13 @@ class CTCDecoder(nn.Module):
         self.out_channels = out_channels
         self.mid_channels = mid_channels
         self.return_feats = return_feats
+
+    @property
+    def feature_channels(self)->int:
+        if self.mid_channels is not None:
+            return self.mid_channels
+        else:
+            return self.svtr_encoder.out_channels
 
     def forward(self, x, data=None):
 

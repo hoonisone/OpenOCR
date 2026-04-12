@@ -14,8 +14,10 @@ from openocr.tools.utils.ckpt import load_ckpt, save_ckpt
 from openocr.tools.utils.logging import get_logger
 from openocr.tools.utils.stats import TrainingStats
 from openocr.tools.utils.utility import AverageMeter
+from pathlib import Path
 
 __all__ = ['Trainer']
+
 
 import torch.distributed as dist
 
@@ -89,9 +91,8 @@ class Trainer(object):
         self.train_dataloader = None
         if 'train' in mode:
             if is_main_process():
-                cfg.save(
-                    os.path.join(self.cfg['Global']['output_dir'],
-                                 'config.yml'), self.cfg)
+                path = Path(self.cfg['Global']['output_dir'])/"config.yml"
+                cfg.save(path.as_posix(), self.cfg)
             self.train_dataloader = build_dataloader(self.cfg,
                                                      'Train',
                                                      self.logger,

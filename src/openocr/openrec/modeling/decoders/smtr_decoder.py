@@ -613,6 +613,9 @@ class SMTRDecoder(nn.Module):
             return torch.concat(logits_all, 1)
 
     def forward_train(self, x, targets=None):
+        if isinstance(targets, dict):
+            targets = [targets[key] for key in ["label", "label_subs", "label_next", "length_subs", "label_subs_pre", "label_next_pre", "length_subs_pre", "length"]]
+
         bs = x.shape[0]
 
         if not self.ds:

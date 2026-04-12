@@ -17,15 +17,15 @@ class CPPDLabelDecode(NRTRLabelDecode):
 
         if isinstance(preds, tuple):
             if isinstance(preds[-1], dict):
-                preds = preds[-1]['align'][-1].detach().cpu().numpy()
+                preds = preds[-1]['align'][-1].detach().cpu().float().numpy()
             else:
-                preds = preds[-1].detach().cpu().numpy()
+                preds = preds[-1].detach().cpu().float().numpy()
         if isinstance(preds, list):
-            preds = preds[-1].detach().cpu().numpy()
+            preds = preds[-1].detach().cpu().float().numpy()
         if isinstance(preds, torch.Tensor):
             preds = preds.detach().cpu().numpy()
         elif isinstance(preds, dict):
-            preds = preds['align'][-1].detach().cpu().numpy()
+            preds = preds['align'][-1].detach().cpu().float().numpy()
         else:
             preds = preds
         preds_idx = preds.argmax(axis=2)

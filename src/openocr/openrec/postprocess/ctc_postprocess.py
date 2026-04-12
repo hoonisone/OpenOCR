@@ -87,6 +87,7 @@ class BaseRecLabelDecode(object):
     def get_ignored_tokens(self):
         return [0]  # for ctc blank
 
+    @property
     def get_character_num(self):
         return len(self.character)
 
@@ -110,7 +111,11 @@ class CTCLabelDecode(BaseRecLabelDecode):
         text = self.decode(preds_idx, preds_prob, is_remove_duplicate=True)
         if batch is None:
             return text
-        label = self.decode(batch[1])
+        if isinstance(batch, dict):
+            label = batch["label"]
+        else:
+            label = batch[1]
+        label = self.decode(label)
         return text, label
 
     def add_special_char(self, dict_character):

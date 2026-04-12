@@ -3,7 +3,7 @@ import re
 import numpy as np
 
 from openocr.tools.utils.logging import get_logger
-
+from pathlib import Path
 
 class BaseRecLabelEncode(object):
     """Convert between text-label and text-index."""
@@ -23,25 +23,34 @@ class BaseRecLabelEncode(object):
         self.reverse = False
         self.logger = get_logger()
         self.ignored_sample_num = 0
+        self.ignored_chars = []
+
+
         if character_dict_path is None:
             self.logger.warning(
                 'The character_dict_path is None, model can only recognize number and lower letters'
             )
             self.character_str = '0123456789abcdefghijklmnopqrstuvwxyz'
-            dict_character = list(self.character_str)
             self.lower = True
         else:
             self.character_str = []
+            character_dict_path = Path(character_dict_path).resolve().as_posix()
             with open(character_dict_path, 'rb') as fin:
                 lines = fin.readlines()
                 for line in lines:
                     line = line.decode('utf-8').strip('\n').strip('\r\n')
                     self.character_str.append(line)
-            if use_space_char:
-                self.character_str.append(' ')
-            dict_character = list(self.character_str)
+
             if 'arabic' in character_dict_path:
                 self.reverse = True
+
+        dict_character = list(self.character_str)
+        if use_space_char:
+            dict_character.append(' ')
+        else:
+            self.ignored_chars.append(' ')
+
+
         dict_character = self.add_special_char(dict_character)
         self.dict = {}
         for i, char in enumerate(dict_character):
@@ -88,14 +97,15 @@ class BaseRecLabelEncode(object):
         text_list = []
         for char in text:
             if char not in self.dict:
-                if self.allow_unknown_chars:
-                    continue
-                else:
-                    self.ignored_sample_num += 1
-                    if self.ignored_sample_num % 1000 == 0:
-                        self.logger.warning(f'The character {char} is not in the dictionary, the sample will be discarded.')
-                        self.logger.warning(f'Ignored {self.ignored_sample_num} samples. until now.')
-                    return None
+                if char in self.ignored_chars: continue
+                if self.allow_unknown_chars: continue
+
+                self.ignored_sample_num += 1
+                if self.ignored_sample_num % 10 == 0:
+                    self.logger.warning(f'The character {char} is not in the dictionary, the sample will be discarded.')
+                    self.logger.warning(f'Ignored {self.ignored_sample_num} samples. until now.')
+                return None
+
             text_list.append(self.dict[char])
         if len(text_list) == 0 or len(text_list) > self.max_text_len:
             return None

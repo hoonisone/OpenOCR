@@ -3,6 +3,7 @@ import os
 import torch
 
 from openocr.tools.utils.logging import get_logger
+from pathlib import Path
 
 def save_ckpt(
     model,
@@ -23,15 +24,24 @@ def save_ckpt(
     :param log: logging information of the epoch
     :param save_best: if True, rename the saved checkpoint to 'model_best.pth.tar'
     """
+
+    weight_dir = cfg["Global"]["weights_dir"]
+    weight_dir = Path(weight_dir).resolve()
+    if not weight_dir.exists():
+        os.makedirs(weight_dir, exist_ok=True)
+
+    weight_dir = weight_dir.as_posix()
     if logger is None:
         logger = get_logger()
     if prefix is None:
         if is_best:
-            save_path = os.path.join(cfg["Global"]["output_dir"], "best.pth")
+            save_path = os.path.join(weight_dir, "best.pth")
         else:
-            save_path = os.path.join(cfg["Global"]["output_dir"], "latest.pth")
+            save_path = os.path.join(weight_dir, "latest.pth")
     else:
-        save_path = os.path.join(cfg["Global"]["output_dir"], prefix + ".pth")
+        save_path = os.path.join(weight_dir, prefix + ".pth")
+
+
     state_dict = model.module.state_dict() if cfg["Global"]["distributed"] else model.state_dict()
     state = {
         "epoch": epoch,
@@ -56,9 +66,11 @@ def load_ckpt(model, cfg, optimizer=None, lr_scheduler=None, logger=None):
     checkpoints = cfg["Global"].get("checkpoints")
     pretrained_model = cfg["Global"].get("pretrained_model")
 
+
+
     status = {}
     if checkpoints and os.path.exists(checkpoints):
-        checkpoint = torch.load(checkpoints, map_location=torch.device("cpu"))
+        checkpoint = torch.load(checkpoints, map_location=torch.device("cpu"), weights_only=False)
         model.load_state_dict(checkpoint["state_dict"], strict=True)
         if optimizer is not None:
             optimizer.load_state_dict(checkpoint["optimizer"])
@@ -78,13 +90,14 @@ def load_ckpt(model, cfg, optimizer=None, lr_scheduler=None, logger=None):
 
 
 def load_pretrained_params(model, pretrained_model, logger):
+    pretrained_model = Path(pretrained_model).resolve().as_posix()
     if pretrained_model.endswith(".safetensors"):
         from safetensors.torch import load_file
         logger.info(f"Loading weights from safetensors: {pretrained_model}")
         checkpoint = load_file(pretrained_model)
     else:
         logger.info(f"Loading weights using torch.load: {pretrained_model}")
-        checkpoint = torch.load(pretrained_model, map_location=torch.device("cpu"))
+        checkpoint = torch.load(pretrained_model, map_location=torch.device("cpu"), weights_only=False)
 
     if "state_dict" in checkpoint:
         state_dict = checkpoint["state_dict"]
