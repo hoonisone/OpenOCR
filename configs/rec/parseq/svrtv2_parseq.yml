@@ -48,6 +48,7 @@ Architecture:
     decode_ar: True
     refine_iters: 1
     only_attn: False
+    
 
 Loss:
   name: PARSeqLoss

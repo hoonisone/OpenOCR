@@ -9,7 +9,8 @@ class PARSeqAugPIL(object):
 
     def __init__(self, **kwargs):
         from .parseq_aug import rand_augment_transform
-        self.transforms = rand_augment_transform()
+        rotate_deg = kwargs.get('rotate_deg', 30)
+        self.transforms = rand_augment_transform(rotate_deg=rotate_deg)
 
     def __call__(self, data):
         img = data['image']

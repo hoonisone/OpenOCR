@@ -133,10 +133,10 @@ auto_augment.NAME_TO_OP.update({
 })
 
 
-def rand_augment_transform(magnitude=5, num_layers=3):
+def rand_augment_transform(magnitude=5, num_layers=3, rotate_deg=30):
     # These are tuned for magnitude=5, which means that effective magnitudes are half of these values.
     hparams = {
-        'rotate_deg': 30,
+        'rotate_deg': rotate_deg,
         'shear_x_pct': 0.9,
         'shear_y_pct': 0.2,
         'translate_x_pct': 0.10,

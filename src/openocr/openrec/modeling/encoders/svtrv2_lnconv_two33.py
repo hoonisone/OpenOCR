@@ -125,8 +125,8 @@ class FlattenBlockRe2D(Block):
                  mlp_ratio=4,
                  qkv_bias=False,
                  qk_scale=None,
-                 drop=0,
-                 attn_drop=0,
+                 drop=0.0,
+                 attn_drop=0.0,
                  drop_path=0,
                  act_layer=nn.GELU,
                  norm_layer=nn.LayerNorm,
@@ -292,6 +292,8 @@ class SVTRStage(nn.Module):
                     self.blocks.append(FlattenTranspose())
                 elif mixer[i] == 'FGlobalRe2D':
                     block = FlattenBlockRe2D
+                else:
+                    raise ValueError(f"Unknown mixer type: {mixer[i]}")
                 self.blocks.append(
                     block(
                         dim=dim,
@@ -440,18 +442,21 @@ class SVTRv2LNConvTwo33(nn.Module):
                  num_convs=[[2] * 3, [2] * 3 + [3] * 3, [3] * 3],
                  kernel_sizes=[[3] * 3, [3] * 3 + [3] * 3, [3] * 3],
                  pope_bias=False,
+                 use_pope=True,
                  **kwargs):
         super().__init__()
         num_stages = len(depths)
         self.num_features = dims[-1]
+        self.use_pope = bool(use_pope)
 
-        feat_max_size = [max_sz[0] // 4, max_sz[1] // 4]
-        self.pope = POPatchEmbed(in_channels=in_channels,
-                                 feat_max_size=feat_max_size,
-                                 embed_dim=dims[0],
-                                 use_pos_embed=use_pos_embed,
-                                 flatten=mixer[0][0] != 'Conv',
-                                 bias=pope_bias)
+        if self.use_pope:
+            feat_max_size = [max_sz[0] // 4, max_sz[1] // 4]
+            self.pope = POPatchEmbed(in_channels=in_channels,
+                                     feat_max_size=feat_max_size,
+                                     embed_dim=dims[0],
+                                     use_pos_embed=use_pos_embed,
+                                     flatten=mixer[0][0] != 'Conv',
+                                     bias=pope_bias)
 
         dpr = np.linspace(0, drop_path_rate,
                           sum(depths))  # stochastic depth decay rule
@@ -504,14 +509,23 @@ class SVTRv2LNConvTwo33(nn.Module):
         if isinstance(m, nn.Conv2d):
             kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
 
-    @torch.jit.ignore
+    @torch.jit.ignore(drop=False)
     def no_weight_decay(self):
-        return {'patch_embed', 'downsample', 'pos_embed'}
+        if self.use_pope:
+            return {'patch_embed', 'downsample', 'pos_embed'}
+        return {'downsample', 'pos_embed'}
 
     def forward(self, x):
         if len(x.shape) == 5:
             x = x.flatten(0, 1)
-        x, sz = self.pope(x)
+        if self.use_pope:
+            x, sz = self.pope(x)
+        else:
+            if x.dim() != 4:
+                raise ValueError(
+                    f"use_pope=False expects feature input [B, C, H, W], got {x.shape}"
+                )
+            sz = [int(x.shape[-2]), int(x.shape[-1])]
         for stage in self.stages:
             x, sz = stage(x, sz)
         return x

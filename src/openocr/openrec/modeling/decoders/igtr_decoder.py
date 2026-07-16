@@ -42,6 +42,17 @@ class CrossAttention(nn.Module):
 
         attn = q.matmul(k.transpose(2, 3))
 
+
+        # print("[DEBUG] q:", q.shape, q.dtype, q.device)
+        # print("[DEBUG] k:", k.shape, k.dtype, k.device)
+        # print("[DEBUG] attn shape:", (q.shape[0], q.shape[1], q.shape[2], k.shape[2]))
+
+        # numel = q.shape[0] * q.shape[1] * q.shape[2] * k.shape[2]
+        # print("[DEBUG] attn numel:", numel)
+        # print("[DEBUG] attn GiB fp16:", numel * 2 / 1024**3)
+        # print("[DEBUG] attn GiB fp32:", numel * 4 / 1024**3)
+
+
         if key_mask is not None:
             attn = attn + key_mask.unsqueeze(1)
 

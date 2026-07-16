@@ -27,9 +27,9 @@ class MPGLabelDecode(BaseRecLabelDecode):
     def __call__(self, preds, batch=None, *args, **kwargs):
 
         if isinstance(preds, list):
-            char_preds = preds[0].detach().cpu().numpy()
+            char_preds = preds[0].detach().float().cpu().numpy()
         else:
-            char_preds = preds.detach().cpu().numpy()
+            char_preds = preds.detach().float().cpu().numpy()
 
         preds_idx = char_preds.argmax(axis=2)
         preds_prob = char_preds.max(axis=2)
@@ -41,7 +41,7 @@ class MPGLabelDecode(BaseRecLabelDecode):
         if self.only_char:
             return char_text, label
         else:
-            bpe_preds = preds[1].detach().cpu().numpy()
+            bpe_preds = preds[1].detach().float().cpu().numpy()
             wp_preds = preds[2]
 
             bpe_preds_idx = bpe_preds.argmax(axis=2)

@@ -62,7 +62,7 @@ class SRNLabelDecode(BaseRecLabelDecode):
         else:
             preds = preds[-1]
             preds = preds.reshape([-1, self.max_len,
-                                   preds.shape[-1]]).detach().cpu().numpy()
+                                   preds.shape[-1]]).detach().float().cpu().numpy()
 
         preds_idx = preds.argmax(axis=2)
         preds_prob = preds.max(axis=2)

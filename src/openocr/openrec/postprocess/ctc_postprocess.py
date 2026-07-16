@@ -87,7 +87,6 @@ class BaseRecLabelDecode(object):
     def get_ignored_tokens(self):
         return [0]  # for ctc blank
 
-    @property
     def get_character_num(self):
         return len(self.character)
 

@@ -105,8 +105,7 @@ Train:
           use_space_char: *use_space_char
           max_text_length: *max_text_length
       - KeepKeys:
-          keep_keys: ['image', 'label', 'label_subs', 'label_next', 'length_subs',
-          'label_subs_pre', 'label_next_pre', 'length_subs_pre', 'length', 'ctc_label', 'ctc_length'] # dataloader will return list in this order
+          keep_keys: ['image', 'label', 'label_subs', 'label_next', 'length_subs', 'label_subs_pre', 'label_next_pre', 'length_subs_pre', 'length', 'ctc_label', 'ctc_length'] # dataloader will return list in this order
   sampler:
     name: RatioSampler
     scales: [[128, 32]] # w, h

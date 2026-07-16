@@ -18,7 +18,8 @@ class LISTERLabelDecode(BaseRecLabelDecode):
 
         preds = preds[1]['logits']
         if isinstance(preds, torch.Tensor):
-            preds = preds.detach().cpu().numpy()
+            # preds = preds.detach().cpu().numpy()
+            preds = preds.float().detach().cpu().numpy()
         preds_idx = preds.argmax(axis=2)
         # preds_idx_top5 = preds.argsort(axis=2)[:, :, -5:]
         preds_prob = preds.max(axis=2)

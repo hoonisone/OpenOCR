@@ -24,6 +24,7 @@ class BaseRecLabelEncode(object):
         self.logger = get_logger()
         self.ignored_sample_num = 0
         self.ignored_chars = []
+        self.empty_text_ignored_num = 0
 
 
         if character_dict_path is None:
@@ -88,9 +89,14 @@ class BaseRecLabelEncode(object):
             length: length of each text. [batch_size]
         """
         if len(text) == 0:
-            self.logger.warning(
-                'The text is empty, the sample will be discarded.'
-            )
+            self.empty_text_ignored_num += 1
+            if self.empty_text_ignored_num % 10000 == 0:
+                self.logger.warning(
+                    'The text is empty, the sample will be discarded.'
+                )
+                self.logger.warning(
+                    f'Ignored {self.empty_text_ignored_num} empty-text samples until now.'
+                )
             return None
         if self.lower:
             text = text.lower()

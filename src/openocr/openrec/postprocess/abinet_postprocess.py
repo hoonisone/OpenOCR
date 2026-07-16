@@ -16,11 +16,11 @@ class ABINetLabelDecode(NRTRLabelDecode):
     def __call__(self, preds, batch=None, *args, **kwargs):
         if isinstance(preds, dict):
             if len(preds['align']) > 0:
-                preds = preds['align'][-1].detach().cpu().numpy()
+                preds = preds['align'][-1].detach().cpu().float().numpy()
             else:
-                preds = preds['vision'].detach().cpu().numpy()
+                preds = preds['vision'].detach().cpu().float().numpy()
         elif isinstance(preds, torch.Tensor):
-            preds = preds.detach().cpu().numpy()
+            preds = preds.detach().cpu().float().numpy()
         else:
             preds = preds
 
@@ -29,7 +29,8 @@ class ABINetLabelDecode(NRTRLabelDecode):
         text = self.decode(preds_idx, preds_prob, is_remove_duplicate=False)
         if batch is None:
             return text
-        label = self.decode(batch[1])
+        label_tensor = batch['label'] if isinstance(batch, dict) else batch[1]
+        label = self.decode(label_tensor)
         return text, label
 
     def add_special_char(self, dict_character):

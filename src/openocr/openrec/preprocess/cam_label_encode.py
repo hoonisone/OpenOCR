@@ -45,9 +45,21 @@ class CAMLabelEncode(ARLabelEncode):
         super(CAMLabelEncode,
               self).__init__(max_text_length, character_dict_path,
                              use_space_char)
-        self.image_shape = image_shape
+        if image_shape is None or len(image_shape) < 2:
+            raise ValueError(
+                f"CAMLabelEncode requires image_shape=[h, w], got: {image_shape}"
+            )
+        self.image_shape = [int(image_shape[0]), int(image_shape[1])]
+        if self.image_shape[0] <= 0 or self.image_shape[1] <= 0:
+            raise ValueError(
+                f"CAMLabelEncode image_shape must be positive, got: {self.image_shape}"
+            )
 
         if font_path is not None:
+            if "freetype" not in globals():
+                raise ImportError(
+                    "pygame.freetype is not available. Install pygame first."
+                )
             freetype.init()
             # init font
             self.font = freetype.Font(font_path)
@@ -74,7 +86,12 @@ class CAMLabelEncode(ARLabelEncode):
         line_bounds = font.get_rect(lines[np.argmax(lengths)])
         fsize = (round(2.0 * line_bounds.width),
                  round(1.25 * line_spacing * len(lines)))
-        surf = pygame.Surface(fsize, pygame.locals.SRCALPHA, 32)
+        src_alpha_flag = getattr(pygame, "SRCALPHA", None)
+        if src_alpha_flag is None:
+            # Compatibility fallback for environments where pygame.locals
+            # is unavailable or not exposed.
+            src_alpha_flag = 0
+        surf = pygame.Surface(fsize, src_alpha_flag, 32)
 
         bbs = []
         space = font.get_rect('O')
@@ -117,23 +134,58 @@ class CAMLabelEncode(ARLabelEncode):
         data = super().__call__(data=data)
         if data is None:
             return None
+        target_h = max(1, self.image_shape[0] // 2)
+        target_w = max(1, self.image_shape[1] // 2)
+        mask_channels = max(1, len(self.character) - 3)
+
         word = []
         for c in data['label'][1:data['length'] + 1]:
             word.append(self.character[c])
         word = ''.join(word)
+        if len(word) == 0:
+            data['binary_mask'] = np.zeros(
+                (target_h, target_w, mask_channels), dtype=np.float32)
+            return data
+
         # binary mask
         binary_mask, bbs = self.render_normal(self.font, word)
-        cate_aware_surf = np.zeros((binary_mask.shape[0], binary_mask.shape[1],
-                                    len(self.character) - 3)).astype(np.uint8)
-        for id, bb in zip(data['label'][1:data['length'] + 1], bbs):
-            char_id = id - 1
-            cate_aware_surf[:, :,
-                            char_id][bb[1]:bb[1] + bb[3], bb[0]:bb[0] +
-                                     bb[2]] = binary_mask[bb[1]:bb[1] + bb[3],
-                                                          bb[0]:bb[0] + bb[2]]
-        binary_mask = cate_aware_surf
-        binary_mask = cv2.resize(
-            binary_mask, (self.image_shape[0] // 2, self.image_shape[1] // 2))
+        if binary_mask.size == 0 or binary_mask.shape[0] <= 0 or binary_mask.shape[
+                1] <= 0:
+            data['binary_mask'] = np.zeros(
+                (target_h, target_w, mask_channels), dtype=np.float32)
+            return data
+
+        if binary_mask.size == 0 or binary_mask.shape[0] <= 0 or binary_mask.shape[
+                1] <= 0:
+            binary_mask = np.zeros((target_h, target_w, mask_channels),
+                                   dtype=np.float32)
+        else:
+            src_h, src_w = binary_mask.shape[:2]
+            resized_gray = cv2.resize(binary_mask, (target_w, target_h))
+            cate_aware_surf = np.zeros((target_h, target_w, mask_channels),
+                                       dtype=np.uint8)
+            scale_x = float(target_w) / float(max(1, src_w))
+            scale_y = float(target_h) / float(max(1, src_h))
+
+            for id, bb in zip(data['label'][1:data['length'] + 1], bbs):
+                char_id = id - 1
+                if char_id < 0 or char_id >= mask_channels:
+                    continue
+                x0 = int(np.floor(bb[0] * scale_x))
+                y0 = int(np.floor(bb[1] * scale_y))
+                x1 = int(np.ceil((bb[0] + bb[2]) * scale_x))
+                y1 = int(np.ceil((bb[1] + bb[3]) * scale_y))
+
+                x0 = max(0, min(target_w, x0))
+                y0 = max(0, min(target_h, y0))
+                x1 = max(0, min(target_w, x1))
+                y1 = max(0, min(target_h, y1))
+                if x1 <= x0 or y1 <= y0:
+                    continue
+
+                cate_aware_surf[y0:y1, x0:x1, char_id] = resized_gray[y0:y1,
+                                                                      x0:x1]
+            binary_mask = cate_aware_surf
         if np.max(binary_mask) > 0:
             binary_mask = binary_mask / np.max(binary_mask)  # [0 ~ 1]
             binary_mask = binary_mask.astype(np.float32)

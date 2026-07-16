@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from openrec.modeling.encoders.svtrnet import (
+from ..encoders.svtrnet import (
     Block,
     ConvBNLayer,
     kaiming_normal_,

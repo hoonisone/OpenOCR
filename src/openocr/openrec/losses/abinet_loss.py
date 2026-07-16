@@ -19,13 +19,18 @@ class ABINetLoss(nn.Module):
         self.align_weight = align_weight
 
     def forward(self, pred, batch):
+        def _label_tensor(b):
+            if isinstance(b, dict):
+                return b['label']
+            return b[1]
+
         loss = {}
         loss_sum = []
         for name, logits in pred.items():
             if isinstance(logits, list):
                 logit_num = len(logits)
                 if logit_num > 0:
-                    all_tgt = torch.cat([batch[1]] * logit_num, 0)
+                    all_tgt = torch.cat([_label_tensor(batch)] * logit_num, 0)
                     all_logits = torch.cat(logits, 0)
                     flt_logtis = all_logits.reshape([-1, all_logits.shape[2]])
                     flt_tgt = all_tgt.reshape([-1])
@@ -33,7 +38,7 @@ class ABINetLoss(nn.Module):
                     continue
             else:
                 flt_logtis = logits.reshape([-1, logits.shape[2]])
-                flt_tgt = batch[1].reshape([-1])
+                flt_tgt = _label_tensor(batch).reshape([-1])
 
             loss[name + '_loss'] = self.loss_func(flt_logtis, flt_tgt) * (
                 self.align_weight if name == 'align' else 1.0)

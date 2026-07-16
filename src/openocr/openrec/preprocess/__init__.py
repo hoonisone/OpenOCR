@@ -85,8 +85,9 @@ def transform(data, ops=None):
             data = op(data)
         except Exception as e:
             print(f"Error applying operator {op.__class__.__name__}: {e}")
-            if data is None:
-                return None
+            return None
+        if data is None:
+            return None
     return data
 
 # 类名到模块的映射

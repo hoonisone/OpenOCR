@@ -23,7 +23,7 @@ class RCTCDecoder(nn.Module):
         self.fc = nn.Linear(
             in_channels,
             out_channels,
-            bias=True,
+            bias=True, 
         )
         self.fc_kv = nn.Linear(
             in_channels,

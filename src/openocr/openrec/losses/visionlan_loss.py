@@ -34,7 +34,21 @@ class VisionLANLoss(nn.Module):
         self.training_step = training_step
 
     def forward(self, pred, batch):
-        text_pre, text_rem, text_mas, _ = pred
+        # Some VisionLAN decoder implementations return 3 values during
+        # training (text_pre, text_rem, text_mas), while others may return
+        # an additional auxiliary output. Support both forms.
+        if isinstance(pred, (list, tuple)):
+            if len(pred) == 3:
+                text_pre, text_rem, text_mas = pred
+            elif len(pred) >= 4:
+                text_pre, text_rem, text_mas, _ = pred[:4]
+            else:
+                raise ValueError(
+                    f'Unexpected VisionLAN prediction length: {len(pred)}')
+        else:
+            raise ValueError(
+                f'Unexpected VisionLAN prediction type: {type(pred)}')
+
         target = batch[1].to(dtype=torch.int64)
         label_flatten, length = flatten_label(target)
         text_pre = _flatten(text_pre, length)
