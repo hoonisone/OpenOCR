@@ -5,7 +5,7 @@ from warnings import catch_warnings
 
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 class KeepKeys:
@@ -60,12 +60,16 @@ class DecodeImage:
 
 class DecodeImagePIL:
 
-    def __init__(self, img_mode='RGB', **kwargs):
+    def __init__(self, img_mode='RGB', ignore_orientation=False, **kwargs):
         self.img_mode = img_mode
+        self.ignore_orientation = ignore_orientation
 
     def __call__(self, data):
         assert isinstance(data['image'], bytes) and len(data['image']) > 0
-        img = Image.open(io.BytesIO(data['image'])).convert('RGB')
+        img = Image.open(io.BytesIO(data['image']))
+        if not self.ignore_orientation:
+            img = ImageOps.exif_transpose(img)
+        img = img.convert('RGB')
 
         if self.img_mode == 'Gray':
             img = img.convert('L')
